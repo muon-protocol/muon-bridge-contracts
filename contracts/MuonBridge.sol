@@ -27,10 +27,17 @@ contract MuonBridge is Ownable{
     uint256 public network;
     // tokenId => tokenContractAddress
     mapping (uint256 => address) public tokens;
+    mapping (address => uint256) public ids;
     // tokenId => isTokenMintable
     mapping (uint256 => bool)    public mintable;
     // chainId => bridgeContractAddress
     mapping (uint256 => address) public sideContracts;
+
+    event AddToken(
+        address addr,
+        uint256 tokenId,
+        bool mintable
+    );
 
     event Deposit(
         uint256 txId,
@@ -173,13 +180,17 @@ contract MuonBridge is Ownable{
 
         uint256 tokenId = uint256(uint160(_tokenContract));
         require(tokens[tokenId] == address(0), "already exist");
+        require(ids[_tokenContract] == 0, "already exist");
 
         StandardToken token = StandardToken(_tokenContract);
         require(token.decimals() > 0, '!exist');
 
         tokens[tokenId] = _tokenContract;
+        ids[_tokenContract] = tokenId;
 
         mintable[tokenId] = false;
+
+        emit AddToken(_tokenContract, tokenId, false);
     }
 
     // TODO: is decimals needed
@@ -197,13 +208,22 @@ contract MuonBridge is Ownable{
 
         address tokenContract = tokenFactory.create(_name, _symbol, _decimals);
         tokens[_tokenId] = tokenContract;
+        ids[tokenContract] = _tokenId;
 
         mintable[_tokenId] = true;
+
+        emit AddToken(tokenContract, _tokenId, true);
+    }
+
+    function getTokenId(address _addr) public view returns (uint256){
+        return ids[_addr];
     }
 
     function ownerAddToken(uint256 _tokenId, address _tokenContract, bool _mintable) public onlyOwner{
         tokens[_tokenId] = _tokenContract;
         mintable[_tokenId] = _mintable;
+
+        emit AddToken(_tokenContract, _tokenId, _mintable);
     }
 
     function getExecutingChainID() public view returns (uint256) {
