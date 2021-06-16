@@ -10,4 +10,4 @@ $ ./node_modules/.bin/truffle compile
 2- $ ./node_modules/.bin/truffle tests  
 
 # Test specific file
-$ ./node_modules/.bin/truffle test --network development --show-events ./test/<path to the file>
+$ ./node_modules/.bin/truffle test --network development --show-events ./test/--path to the file--/
