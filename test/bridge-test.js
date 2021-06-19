@@ -49,46 +49,50 @@ contract("MuonBridge", (accounts) => {
                 "bsctest"
             )
             // console.dir(muonResponse, {depth: null})
-            let {success, result: {data: {result: {token, tokenId}}, signatures}} = muonResponse;
+            let {success, result: {data: {result: {token, tokenId}}, signatures, cid}} = muonResponse;
             assert(muonResponse.success === true, 'Muon response failed')
             expect.error(
                 bridge2.addBridgeToken(
-                    '125', 
-                    token.name, 
-                    token.symbol, 
+                    '125',
+                    token.name,
+                    token.symbol,
                     token.decimals,
+                    `0x${cid.substr(1)}`,
                     signatures.map(s => s.signature)
-                ), 
+                ),
                 '!verified'
             )
             expect.error(
                 bridge2.addBridgeToken(
-                    tokenId, 
-                    "incorrect name", 
-                    token.symbol, 
+                    tokenId,
+                    "incorrect name",
+                    token.symbol,
                     token.decimals,
+                    `0x${cid.substr(1)}`,
                     signatures.map(s => s.signature)
-                ), 
+                ),
                 '!verified'
             )
             expect.error(
                 bridge2.addBridgeToken(
-                    tokenId, 
-                    token.name, 
-                    'INCORRECT_SYM', 
+                    tokenId,
+                    token.name,
+                    'INCORRECT_SYM',
                     token.decimals,
+                    `0x${cid.substr(1)}`,
                     signatures.map(s => s.signature)
-                ), 
+                ),
                 '!verified'
             )
             expect.error(
                 bridge2.addBridgeToken(
-                    tokenId, 
-                    token.name, 
-                    token.symbol, 
+                    tokenId,
+                    token.name,
+                    token.symbol,
                     '8',
+                    `0x${cid.substr(1)}`,
                     signatures.map(s => s.signature)
-                ), 
+                ),
                 '!verified'
             )
         })
@@ -103,10 +107,11 @@ contract("MuonBridge", (accounts) => {
             // let {success, result: {data: {result: {token as t, tokenId as tid}}, signatures}} = muonResponse;
             assert(muonResponse.success === true, 'Muon response failed')
             await bridge2.addBridgeToken(
-                muonResponse.result.data.result.tokenId, 
-                muonResponse.result.data.result.token.name, 
-                muonResponse.result.data.result.token.symbol, 
+                muonResponse.result.data.result.tokenId,
+                muonResponse.result.data.result.token.name,
+                muonResponse.result.data.result.token.symbol,
                 muonResponse.result.data.result.token.decimals,
+                `0x${muonResponse.result.cid.substr(1)}`,
                 muonResponse.result.signatures.map(s => s.signature)
             )
             let bridgeTokenAddress = await bridge2.tokens.call(muonResponse.result.data.result.tokenId);
@@ -123,7 +128,7 @@ contract("MuonBridge", (accounts) => {
             let result = await bridge1.deposit(amount, toChain, tokenId)
             expect.eventEmitted(result, 'Deposit', (ev) => {
                 return (
-                    ev.user == accounts[0] 
+                    ev.user == accounts[0]
                     && ev.amount.toString() == amount.toString()
                     && ev.toChain.eq(web3.utils.toBN(2))
                 );
@@ -144,10 +149,19 @@ contract("MuonBridge", (accounts) => {
                 sigs
             })
 
-            let result2 = await bridge2.claim(accounts[0], amount, '1', '2', tokenId, depositTxId, sigs);
+            let result2 = await bridge2.claim(
+              accounts[0],
+              amount,
+              '1',
+              '2',
+              tokenId,
+              depositTxId,
+              `0x${muonResult.result.cid.substr(1)}`,
+              sigs
+            );
             expect.eventEmitted(result2, 'Claim', (ev) => {
                 return (
-                    ev.user == accounts[0] 
+                    ev.user == accounts[0]
                     && ev.amount.toString() == amount.toString()
                     && ev.fromChain.eq(web3.utils.toBN(1))
                     && ev.txId.toString() === depositTxId.toString()

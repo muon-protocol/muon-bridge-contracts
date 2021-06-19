@@ -49,9 +49,9 @@ contract MuonBridge is Ownable{
 
     event Claim(
         address indexed user,
-        uint256 amount, 
-        uint256 indexed fromChain, 
-        uint256 tokenId, 
+        uint256 amount,
+        uint256 indexed fromChain,
+        uint256 tokenId,
         uint256 txId
     );
 
@@ -115,7 +115,7 @@ contract MuonBridge is Ownable{
     //TODO: add Muon signature
     function claim(address user,
         uint256 amount, uint256 fromChain, uint256 toChain,
-        uint256 tokenId, uint256 txId, bytes[] calldata sigs) public{
+        uint256 tokenId, uint256 txId, bytes calldata _reqId, bytes[] calldata sigs) public{
 
         require(sideContracts[fromChain] != address(0), 'side contract not exist');
         require(toChain == network, "!network");
@@ -123,7 +123,7 @@ contract MuonBridge is Ownable{
 
         bytes32 hash = keccak256(abi.encodePacked(sideContracts[fromChain], user, amount, fromChain, toChain, tokenId, txId));
         hash = hash.toEthSignedMessageHash();
-        bool isVerified = muon.verify(hash, sigs);
+        bool isVerified = muon.verify(_reqId, hash, sigs);
 
         require(isVerified, "sigs not verified");
 
@@ -136,7 +136,7 @@ contract MuonBridge is Ownable{
         if(mintable[tokenId]){
             token.mint(user, amount);
         }
-        else{ 
+        else{
             token.transfer(user, amount);
         }
 
@@ -193,16 +193,15 @@ contract MuonBridge is Ownable{
         emit AddToken(_tokenContract, tokenId, false);
     }
 
-    // TODO: is decimals needed
     function addBridgeToken(
         uint256 _tokenId, string calldata _name, string calldata _symbol, uint8 _decimals,
-        bytes[] calldata _sigs
+        bytes calldata _reqId, bytes[] calldata _sigs
     ) public {
         require(tokens[_tokenId] == address(0), "already exist");
 
         bytes32 hash = keccak256(abi.encodePacked(_tokenId, _name, _symbol, _decimals));
         hash = hash.toEthSignedMessageHash();
-        bool verified = muon.verify(hash, _sigs);
+        bool verified = muon.verify(_reqId, hash, _sigs);
 
         require(verified, '!verified');
 
