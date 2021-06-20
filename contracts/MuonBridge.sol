@@ -205,7 +205,11 @@ contract MuonBridge is Ownable{
 
         require(verified, '!verified');
 
-        address tokenContract = tokenFactory.create(_name, _symbol, _decimals);
+        address tokenContract = tokenFactory.create(
+            string(abi.encodePacked('Muon ', _name)), 
+            string(abi.encodePacked('\u03BC-', _symbol)),  // "μ-"
+            _decimals
+        );
         tokens[_tokenId] = tokenContract;
         ids[tokenContract] = _tokenId;
 
