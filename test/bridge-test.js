@@ -1,24 +1,22 @@
-const MuonV01 = artifacts.require('MuonV01');
+var SchnorrLib = artifacts.require('SchnorrSECP256K1')
+const MuonV02 = artifacts.require('MuonV02');
 const MuonBridge = artifacts.require('MuonBridge');
 const ERT = artifacts.require('ERT');
 const BridgeToken = artifacts.require('BridgeToken');
 const truffleAssert = require('truffle-assertions');
 const {expect, muonNode} = require('./helpers')
 
-MUON_NODE_1 = '0x06A85356DCb5b307096726FB86A78c59D38e08ee'
-MUON_NODE_2 = '0x4513218Ce2e31004348Fd374856152e1a026283C'
-MUON_NODE_3 = '0xe4f507b6D5492491f4B57f0f235B158C4C862fea'
+const pubKeyAddress = process.env.MUON_MASTER_WALLET_PUB_ADDRESS;
+const pubKeyX = process.env.MUON_MASTER_WALLET_PUB_X;
+const pubKeyYParity = process.env.MUON_MASTER_WALLET_PUB_Y_PARITY;
 
 
 contract("MuonBridge", (accounts) => {
     let owner=accounts[9], muon, bridge1, bridge2, token, bridgeToken;
 
     before(async () => {
-        muon = await MuonV01.new({from: owner});
-
-        await muon.ownerAddSigner(MUON_NODE_1, {from: owner})
-        await muon.ownerAddSigner(MUON_NODE_2, {from: owner})
-        await muon.ownerAddSigner(MUON_NODE_3, {from: owner})
+        let lib = await SchnorrLib.new({from: owner})
+        muon = await MuonV02.new(lib.address, pubKeyAddress, pubKeyX, pubKeyYParity, {from: owner});
 
         token = await ERT.new({from: owner});
         await token.mint(accounts[0], web3.utils.toWei('25000'))
@@ -49,8 +47,9 @@ contract("MuonBridge", (accounts) => {
                 "bsctest"
             )
             // console.dir(muonResponse, {depth: null})
-            let {success, result: {data: {result: {token, tokenId}}, signatures, cid}} = muonResponse;
+            let {success, result: {data: {init: {nonceAddress: nonce}, result: {token, tokenId}}, signatures, cid}} = muonResponse;
             assert(muonResponse.success === true, 'Muon response failed')
+            let sigs = signatures.map(({signature, owner}) => ({signature, owner, nonce}))
             expect.error(
                 bridge2.addBridgeToken(
                     '125',
@@ -58,7 +57,7 @@ contract("MuonBridge", (accounts) => {
                     token.symbol,
                     token.decimals,
                     `0x${cid.substr(1)}`,
-                    signatures.map(s => s.signature)
+                    sigs
                 ),
                 '!verified'
             )
@@ -69,7 +68,7 @@ contract("MuonBridge", (accounts) => {
                     token.symbol,
                     token.decimals,
                     `0x${cid.substr(1)}`,
-                    signatures.map(s => s.signature)
+                    sigs
                 ),
                 '!verified'
             )
@@ -80,7 +79,7 @@ contract("MuonBridge", (accounts) => {
                     'INCORRECT_SYM',
                     token.decimals,
                     `0x${cid.substr(1)}`,
-                    signatures.map(s => s.signature)
+                    sigs
                 ),
                 '!verified'
             )
@@ -91,7 +90,7 @@ contract("MuonBridge", (accounts) => {
                     token.symbol,
                     '8',
                     `0x${cid.substr(1)}`,
-                    signatures.map(s => s.signature)
+                    sigs
                 ),
                 '!verified'
             )
@@ -106,13 +105,23 @@ contract("MuonBridge", (accounts) => {
             // console.dir(muonResponse, {depth: null})
             // let {success, result: {data: {result: {token as t, tokenId as tid}}, signatures}} = muonResponse;
             assert(muonResponse.success === true, 'Muon response failed')
+            let nonce = muonResponse.result.data.init.nonceAddress
+            let sigs = muonResponse.result.signatures.map(({signature, owner}) => ({signature, owner, nonce}))
+            console.log('bridge2.addBridgeToken', {
+                tokenId: muonResponse.result.data.result.tokenId,
+                name: muonResponse.result.data.result.token.name,
+                symbol: muonResponse.result.data.result.token.symbol,
+                decimals: muonResponse.result.data.result.token.decimals,
+                cid: `0x${muonResponse.result.cid.substr(1)}`,
+                sigs
+            })
             await bridge2.addBridgeToken(
                 muonResponse.result.data.result.tokenId,
                 muonResponse.result.data.result.token.name,
                 muonResponse.result.data.result.token.symbol,
                 muonResponse.result.data.result.token.decimals,
                 `0x${muonResponse.result.cid.substr(1)}`,
-                muonResponse.result.signatures.map(s => s.signature)
+                sigs
             )
             let bridgeTokenAddress = await bridge2.tokens.call(muonResponse.result.data.result.tokenId);
             bridgeToken = await BridgeToken.at(bridgeTokenAddress);
@@ -138,7 +147,8 @@ contract("MuonBridge", (accounts) => {
 
             let muonResult = await muonNode.ethCallContract(bridge1.address, 'getTx', [depositTxId], bridge1.abi);
             assert(muonResult.success, 'muon node failed')
-            let sigs = muonResult.result.signatures.map(({signature}) => signature)
+            let nonce = muonResult.result.data.init.nonceAddress;
+            let sigs = muonResult.result.signatures.map(({owner, signature}) => ({owner, signature, nonce}))
             console.log({
                 user: accounts[0],
                 amount: amount.toString(),
