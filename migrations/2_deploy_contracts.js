@@ -1,6 +1,6 @@
 var schnorrLib = artifacts.require('./SchnorrSECP256K1.sol')
 var bridge = artifacts.require('./MuonBridge.sol')
-var muon = artifacts.require('./MuonV01.sol')
+var muon = artifacts.require('./MuonV02.sol')
 
 const pubKeyAddress = process.env.MUON_MASTER_WALLET_PUB_ADDRESS;
 const pubKeyX = process.env.MUON_MASTER_WALLET_PUB_X;
