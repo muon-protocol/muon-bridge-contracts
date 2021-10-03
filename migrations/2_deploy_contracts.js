@@ -21,19 +21,20 @@ module.exports = function (deployer) {
 	deployer.then(async () => {
 		let params = parseArgv()
 
-		let muonAddress = null, schnorrLibAddress = null;
-		if(!!params['libAddress']){
-			schnorrLibAddress = params['libAddress'];
-		}
-		else{
-			let deployedSchnorrLib = await await deployer.deploy(schnorrLib);
-			schnorrLibAddress = deployedSchnorrLib.address;
-		}
+		let muonAddress = null;
 
 		if(!!params['muonAddress']){
 			muonAddress = params['muonAddress'];
 		}
 		else{
+			let schnorrLibAddress = null;
+			if(!!params['libAddress']){
+				schnorrLibAddress = params['libAddress'];
+			}
+			else{
+				let deployedSchnorrLib = await await deployer.deploy(schnorrLib);
+				schnorrLibAddress = deployedSchnorrLib.address;
+			}
 			let deployedMuon = await await deployer.deploy(muon, schnorrLibAddress, pubKeyAddress, pubKeyX, pubKeyYParity);
 			muonAddress = deployedMuon.address;
 		}
