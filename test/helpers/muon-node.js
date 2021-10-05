@@ -6,7 +6,7 @@ function request(params){
 	return axios.post(BASE_URL, params).then(({data}) => data)
 }
 
-function ethCallContract(address, method, params, abi, outputs=[]) {
+function ethCallContract(address, method, params, abi, outputs=[], network='ganache') {
 	let filteredAbi = [
 		abi.find(({name, type}) => (name === method && type === 'function'))
 	]
@@ -18,7 +18,7 @@ function ethCallContract(address, method, params, abi, outputs=[]) {
 			method, 
 			params, 
 			abi: filteredAbi,
-			network: 'ganache'
+			network
 		}
 	}
 	return axios.post(BASE_URL, data).then(({data}) => data)

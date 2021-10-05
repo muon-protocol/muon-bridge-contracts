@@ -24,6 +24,8 @@
 // const fs = require('fs');
 // const mnemonic = fs.readFileSync(".secret").toString().trim();
 
+function missing_privateKey(){throw 'MNEMONIC/privateKey missing'}
+
 require('dotenv').config()
 const HDWalletProvider = require("@truffle/hdwallet-provider");
 console.log('https://ropsten.infura.io/v3/' + process.env.INFURA_KEY)
@@ -67,7 +69,7 @@ module.exports = {
       //provider: () => new HDWalletProvider(mnemonic, `https://ropsten.infura.io/v3/YOUR-PROJECT-ID`),
       provider: () =>
         new HDWalletProvider(
-          process.env.PK,
+          process.env.MNEMONIC || process.env.PK || missing_privateKey(),
           'https://ropsten.infura.io/v3/' + process.env.INFURA_KEY
         ),
       network_id: 3, // Ropsten's id
@@ -80,7 +82,7 @@ module.exports = {
     rinkeby: {
       provider: () =>
         new HDWalletProvider(
-          process.env.PK,
+          process.env.MNEMONIC || process.env.PK || missing_privateKey(),
           'https://rinkeby.infura.io/v3/' + process.env.INFURA_KEY
         ),
       network_id: 4, // Ropsten's id
@@ -93,7 +95,7 @@ module.exports = {
     bsctest: {
       provider: () =>
         new HDWalletProvider(
-          process.env.PK,
+          process.env.MNEMONIC || process.env.PK || missing_privateKey(),
           `https://data-seed-prebsc-1-s2.binance.org:8545`
         ),
       network_id: 97,
@@ -105,7 +107,7 @@ module.exports = {
     bsc: {
       provider: () =>
         new HDWalletProvider(
-          process.env.PK,
+          process.env.MNEMONIC || process.env.PK || missing_privateKey(),
           `https://bsc-dataseed1.binance.org`
         ),
       network_id: 56,
@@ -118,7 +120,7 @@ module.exports = {
     ftmtest: {
       provider: () =>
         new HDWalletProvider(
-          process.env.PK,
+          process.env.MNEMONIC || process.env.PK || missing_privateKey(),
           `https://rpc.testnet.fantom.network/`
         ),
       network_id: 4002,
