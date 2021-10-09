@@ -20,10 +20,13 @@ contract("MuonBridge", (accounts) => {
     console.log(`=============== Running test on the [${network}] network ==============`)
 
     before(async () => {
-        let lib = await SchnorrLib.new({from: owner})
-        console.log(`schnorr-lib deployed successfully at ${lib.address}`)
-        muon = await MuonV02.new(lib.address, pubKeyAddress, pubKeyX, pubKeyYParity, {from: owner});
-        console.log(`MuonV02 deployed successfully at ${muon.address}`)
+        // let lib = await SchnorrLib.new({from: owner})
+        // console.log(`schnorr-lib deployed successfully at ${lib.address}`)
+        // muon = await MuonV02.new(lib.address, pubKeyAddress, pubKeyX, pubKeyYParity, {from: owner});
+        // console.log(`MuonV02 deployed successfully at ${muon.address}`)
+
+        lib = await SchnorrLib.at('0x0F097a96372147Bf1D788f4E11331E5006F90d0a');
+        muon = await SchnorrLib.at('0xFf195FC389897BD3694848B554AdF643F5dD5149');
 
         token = await ERT.new({from: owner});
         console.log(`ERT deployed successfully at ${token.address}`)
@@ -62,11 +65,20 @@ contract("MuonBridge", (accounts) => {
         });
 
         it("should not be able to add bridge token without correct data", async () => {
-            let muonResponse = await muonNode.ethAddBridgeToken(
-                "0xb9B5FFC3e1404E3Bb7352e656316D6C5ce6940A1",
-                "rinkeby",
-                "bsctest"
-            )
+            // let muonResponse = await muonNode.ethAddBridgeToken(
+            //     "0xb9B5FFC3e1404E3Bb7352e656316D6C5ce6940A1",
+            //     "rinkeby",
+            //     "bsctest"
+            // )
+            let muonResponse = await muonNode.request({
+                app: "bridge",
+                method: "addBridgeToken",
+                params: {
+                    mainTokenAddress: "0xb9B5FFC3e1404E3Bb7352e656316D6C5ce6940A1",
+                    mainNetwork: "rinkeby",
+                    targetNetwork: "bsctest"
+                }
+            })
             // console.dir(muonResponse, {depth: null})
             let {success, result: {data: {init: {nonceAddress: nonce}, result: {token, tokenId}}, signatures, cid}} = muonResponse;
             assert(muonResponse.success === true, 'Muon response failed')
@@ -119,7 +131,7 @@ contract("MuonBridge", (accounts) => {
 
         it("should be able to add bridge token", async () => {
             let muonResponse = await muonNode.request({
-                app: "eth",
+                app: "bridge",
                 method: "addBridgeToken",
                 params: {
                     mainTokenAddress: token.address,
@@ -170,14 +182,23 @@ contract("MuonBridge", (accounts) => {
             let depositEvent = result.logs.find(ev => (ev.event === 'Deposit'))
             let depositTxId = depositEvent.args.txId.toString();
 
-            let muonResult = await muonNode.ethCallContract(
-                bridge1.address, 
-                'getTx', 
-                [depositTxId], 
-                bridge1.abi,
-                null,
-                network
-            );
+            // let muonResult = await muonNode.ethCallContract(
+            //     bridge1.address, 
+            //     'getTx', 
+            //     [depositTxId], 
+            //     bridge1.abi,
+            //     null,
+            //     network
+            // );
+            let muonResult = await muonNode.request({
+                app: 'bridge',
+                method: 'claim',
+                params: {
+                    depositAddress: bridge1.address, 
+                    depositTxId, 
+                    depositNetwork: network
+                }
+            });
             assert(muonResult.success, 'muon node failed')
             let nonce = muonResult.result.data.init.nonceAddress;
             let sigs = muonResult.result.signatures.map(({owner, signature}) => ({owner, signature, nonce}))

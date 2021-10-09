@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "./MuonV02.sol";
+import "./IMuonV02.sol";
 import "./BridgeTokenFactory.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
@@ -20,9 +20,10 @@ interface StandardToken {
 contract MuonBridge is Ownable{
     using SafeMath for uint256;
     using ECDSA for bytes32;
+    uint8 constant APP_ID = 3;
 
     BridgeTokenFactory tokenFactory;
-    MuonV02 muon;
+    IMuonV02 muon;
     // we assign a unique ID to each chain (default is CHAIN-ID)
     uint256 public network;
     // tokenId => tokenContractAddress
@@ -73,7 +74,7 @@ contract MuonBridge is Ownable{
     constructor(address _muon){
         network = getExecutingChainID();
         tokenFactory = new BridgeTokenFactory(address(this));
-        muon = MuonV02(_muon);
+        muon = IMuonV02(_muon);
     }
 
     function deposit(uint256 amount, uint256 toChain,
@@ -126,7 +127,7 @@ contract MuonBridge is Ownable{
         // split encoding to avoid "stack too deep" error.
         bytes32 hash = keccak256(abi.encodePacked(
             abi.encodePacked(sideContracts[fromChain], txId, tokenId), 
-            abi.encodePacked(amount, fromChain, toChain, user)
+            abi.encodePacked(amount, fromChain, toChain, user, APP_ID)
         ));
 
         require(muon.verify(_reqId, uint256(hash), _sigs), "!verified");
@@ -204,7 +205,7 @@ contract MuonBridge is Ownable{
     ) public {
         require(tokens[_tokenId] == address(0), "already exist");
 
-        bytes32 hash = keccak256(abi.encodePacked(_tokenId, _name, _symbol, _decimals));
+        bytes32 hash = keccak256(abi.encodePacked(_tokenId, _name, _symbol, _decimals, APP_ID));
         require(muon.verify(_reqId, uint256(hash), _sigs), '!verified');
 
         address tokenContract = tokenFactory.create(
