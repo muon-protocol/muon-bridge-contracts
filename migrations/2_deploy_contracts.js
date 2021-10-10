@@ -1,4 +1,4 @@
-var muon = artifacts.require('./MuonV02.sol')
+var bridge = artifacts.require('./MuonBridge.sol')
 
 const pubKeyAddress = process.env.MUON_MASTER_WALLET_PUB_ADDRESS;
 const pubKeyX = process.env.MUON_MASTER_WALLET_PUB_X;
@@ -17,13 +17,15 @@ function parseArgv(){
 
 module.exports = function (deployer) {
 	deployer.then(async () => {
-		let params = parseArgv()
+		let {muonAddress} = parseArgv()
 
-		let muonAddress = null;
+		let  = null;
 
-		if(!params['muonAddress']){
+		if(!muonAddress){
 			throw {message: "muonAddress required."}
 		}
+
+		console.log(`deploying MuonV02 muonAddress=${muonAddress} ...`)
 		let deployedBridge = await deployer.deploy(bridge, muonAddress)
 	})
 }
