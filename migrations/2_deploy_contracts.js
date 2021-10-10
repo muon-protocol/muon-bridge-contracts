@@ -1,5 +1,3 @@
-var schnorrLib = artifacts.require('./SchnorrSECP256K1.sol')
-var bridge = artifacts.require('./MuonBridge.sol')
 var muon = artifacts.require('./MuonV02.sol')
 
 const pubKeyAddress = process.env.MUON_MASTER_WALLET_PUB_ADDRESS;
@@ -23,20 +21,8 @@ module.exports = function (deployer) {
 
 		let muonAddress = null;
 
-		if(!!params['muonAddress']){
-			muonAddress = params['muonAddress'];
-		}
-		else{
-			let schnorrLibAddress = null;
-			if(!!params['libAddress']){
-				schnorrLibAddress = params['libAddress'];
-			}
-			else{
-				let deployedSchnorrLib = await await deployer.deploy(schnorrLib);
-				schnorrLibAddress = deployedSchnorrLib.address;
-			}
-			let deployedMuon = await await deployer.deploy(muon, schnorrLibAddress, pubKeyAddress, pubKeyX, pubKeyYParity);
-			muonAddress = deployedMuon.address;
+		if(!params['muonAddress']){
+			throw {message: "muonAddress required."}
 		}
 		let deployedBridge = await deployer.deploy(bridge, muonAddress)
 	})
