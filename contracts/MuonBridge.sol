@@ -9,15 +9,27 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 interface StandardToken {
     function balanceOf(address account) external view returns (uint256);
-    function transfer(address recipient, uint256 amount) external returns (bool);
-    function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
+
+    function transfer(address recipient, uint256 amount)
+        external
+        returns (bool);
+
+    function transferFrom(
+        address sender,
+        address recipient,
+        uint256 amount
+    ) external returns (bool);
+
     function approve(address spender, uint256 amount) external returns (bool);
+
     function decimals() external returns (uint8);
+
     function mint(address reveiver, uint256 amount) external returns (bool);
+
     function burn(address sender, uint256 amount) external returns (bool);
 }
 
-contract MuonBridge is Ownable{
+contract MuonBridge is Ownable {
     using SafeMath for uint256;
     using ECDSA for bytes32;
     uint8 constant APP_ID = 3;
@@ -27,18 +39,14 @@ contract MuonBridge is Ownable{
     // we assign a unique ID to each chain (default is CHAIN-ID)
     uint256 public network;
     // tokenId => tokenContractAddress
-    mapping (uint256 => address) public tokens;
-    mapping (address => uint256) public ids;
+    mapping(uint256 => address) public tokens;
+    mapping(address => uint256) public ids;
     // tokenId => isTokenMintable
-    mapping (uint256 => bool)    public mintable;
+    mapping(uint256 => bool) public mintable;
     // chainId => bridgeContractAddress
-    mapping (uint256 => address) public sideContracts;
+    mapping(uint256 => address) public sideContracts;
 
-    event AddToken(
-        address addr,
-        uint256 tokenId,
-        bool mintable
-    );
+    event AddToken(address addr, uint256 tokenId, bool mintable);
 
     event Deposit(
         uint256 txId,
@@ -56,7 +64,7 @@ contract MuonBridge is Ownable{
         uint256 txId
     );
 
-    struct TX{
+    struct TX {
         uint256 txId;
         uint256 tokenId;
         uint256 amount;
@@ -71,30 +79,34 @@ contract MuonBridge is Ownable{
 
     mapping(uint256 => mapping(uint256 => bool)) public claimedTxs;
 
-    constructor(address _muon){
+    constructor(address _muon) {
         network = getExecutingChainID();
         tokenFactory = new BridgeTokenFactory(address(this));
         muon = IMuonV02(_muon);
     }
 
-    function deposit(uint256 amount, uint256 toChain,
-        uint256 tokenId) public returns (uint256){
+    function deposit(
+        uint256 amount,
+        uint256 toChain,
+        uint256 tokenId
+    ) public returns (uint256) {
         return depositFor(msg.sender, amount, toChain, tokenId);
     }
 
-    function depositFor(address user,
-        uint256 amount, uint256 toChain,
+    function depositFor(
+        address user,
+        uint256 amount,
+        uint256 toChain,
         uint256 tokenId
-    ) public returns (uint256){
+    ) public returns (uint256) {
         require(sideContracts[toChain] != address(0), "!unknown toChain");
         require(toChain != network, "!selfDeposit");
         require(tokens[tokenId] != address(0), "!tokenId");
 
         StandardToken token = StandardToken(tokens[tokenId]);
-        if(mintable[tokenId]){
+        if (mintable[tokenId]) {
             token.burn(address(msg.sender), amount);
-        }
-        else{
+        } else {
             token.transferFrom(address(msg.sender), address(this), amount);
         }
 
@@ -114,21 +126,35 @@ contract MuonBridge is Ownable{
     }
 
     //TODO: add Muon signature
-    function claim(address user,
-        uint256 amount, uint256 fromChain, uint256 toChain,
-        uint256 tokenId, uint256 txId, bytes calldata _reqId, 
+    function claim(
+        address user,
+        uint256 amount,
+        uint256 fromChain,
+        uint256 toChain,
+        uint256 tokenId,
+        uint256 txId,
+        bytes calldata _reqId,
         SchnorrSign[] calldata _sigs
-    ) public{
-
-        require(sideContracts[fromChain] != address(0), 'side contract not exist');
+    ) public {
+        require(
+            sideContracts[fromChain] != address(0),
+            "side contract not exist"
+        );
         require(toChain == network, "!network");
         require(_sigs.length > 0, "!sigs");
 
         // split encoding to avoid "stack too deep" error.
-        bytes32 hash = keccak256(abi.encodePacked(
-            abi.encodePacked(sideContracts[fromChain], txId, tokenId), 
-            abi.encodePacked(amount, fromChain, toChain, user, APP_ID)
-        ));
+        bytes32 hash = keccak256(
+            abi.encodePacked(
+                abi.encodePacked(
+                    APP_ID,
+                    sideContracts[fromChain],
+                    txId,
+                    tokenId
+                ),
+                abi.encodePacked(amount, fromChain, toChain, user)
+            )
+        );
 
         require(muon.verify(_reqId, uint256(hash), _sigs), "!verified");
 
@@ -138,10 +164,9 @@ contract MuonBridge is Ownable{
 
         StandardToken token = StandardToken(tokens[tokenId]);
         //TODO: any fees?
-        if(mintable[tokenId]){
+        if (mintable[tokenId]) {
             token.mint(user, amount);
-        }
-        else{
+        } else {
             token.transfer(user, amount);
         }
 
@@ -149,29 +174,37 @@ contract MuonBridge is Ownable{
         emit Claim(user, amount, fromChain, tokenId, txId);
     }
 
-    function pendingTxs(uint256 fromChain, uint256[] calldata ids) public view returns(
-        bool[] memory unclaimedIds
-    ){
+    function pendingTxs(uint256 fromChain, uint256[] calldata ids)
+        public
+        view
+        returns (bool[] memory unclaimedIds)
+    {
         unclaimedIds = new bool[](ids.length);
-        for(uint256 i=0; i < ids.length; i++){
+        for (uint256 i = 0; i < ids.length; i++) {
             unclaimedIds[i] = claimedTxs[fromChain][ids[i]];
         }
     }
 
-    function getUserTxs(address user, uint256 toChain) public view returns(
-        uint256[] memory
-    ){
+    function getUserTxs(address user, uint256 toChain)
+        public
+        view
+        returns (uint256[] memory)
+    {
         return userTxs[user][toChain];
     }
 
-    function getTx(uint256 _txId) public view returns(
-        uint256 txId,
-        uint256 tokenId,
-        uint256 amount,
-        uint256 fromChain,
-        uint256 toChain,
-        address user
-    ){
+    function getTx(uint256 _txId)
+        public
+        view
+        returns (
+            uint256 txId,
+            uint256 tokenId,
+            uint256 amount,
+            uint256 fromChain,
+            uint256 toChain,
+            address user
+        )
+    {
         txId = txs[_txId].txId;
         tokenId = txs[_txId].tokenId;
         amount = txs[_txId].amount;
@@ -181,14 +214,14 @@ contract MuonBridge is Ownable{
     }
 
     function addMainToken(address _tokenContract) public {
-        require(_tokenContract != address(0), '!zero');
+        require(_tokenContract != address(0), "!zero");
 
         uint256 tokenId = uint256(uint160(_tokenContract));
         require(tokens[tokenId] == address(0), "already exist");
         require(ids[_tokenContract] == 0, "already exist");
 
         StandardToken token = StandardToken(_tokenContract);
-        require(token.decimals() > 0, '!exist');
+        require(token.decimals() > 0, "!exist");
 
         tokens[tokenId] = _tokenContract;
         ids[_tokenContract] = tokenId;
@@ -199,18 +232,23 @@ contract MuonBridge is Ownable{
     }
 
     function addBridgeToken(
-        uint256 _tokenId, string calldata _name, string calldata _symbol, uint8 _decimals,
-        bytes calldata _reqId, 
+        uint256 _tokenId,
+        string calldata _name,
+        string calldata _symbol,
+        uint8 _decimals,
+        bytes calldata _reqId,
         SchnorrSign[] calldata _sigs
     ) public {
         require(tokens[_tokenId] == address(0), "already exist");
 
-        bytes32 hash = keccak256(abi.encodePacked(_tokenId, _name, _symbol, _decimals, APP_ID));
-        require(muon.verify(_reqId, uint256(hash), _sigs), '!verified');
+        bytes32 hash = keccak256(
+            abi.encodePacked(_tokenId, _name, _symbol, _decimals, APP_ID)
+        );
+        require(muon.verify(_reqId, uint256(hash), _sigs), "!verified");
 
         address tokenContract = tokenFactory.create(
-            string(abi.encodePacked('Muon ', _name)), 
-            string(abi.encodePacked('\u03BC-', _symbol)),  // "μ-"
+            string(abi.encodePacked("Muon ", _name)),
+            string(abi.encodePacked("\u03BC-", _symbol)), // "μ-"
             _decimals
         );
         tokens[_tokenId] = tokenContract;
@@ -221,11 +259,15 @@ contract MuonBridge is Ownable{
         emit AddToken(tokenContract, _tokenId, true);
     }
 
-    function getTokenId(address _addr) public view returns (uint256){
+    function getTokenId(address _addr) public view returns (uint256) {
         return ids[_addr];
     }
 
-    function ownerAddToken(uint256 _tokenId, address _tokenContract, bool _mintable) public onlyOwner{
+    function ownerAddToken(
+        uint256 _tokenId,
+        address _tokenContract,
+        bool _mintable
+    ) public onlyOwner {
         tokens[_tokenId] = _tokenContract;
         mintable[_tokenId] = _mintable;
 
@@ -240,29 +282,44 @@ contract MuonBridge is Ownable{
         return id;
     }
 
-    function ownerSetNetworkID(
-        uint256 _network
-    ) public onlyOwner{
+    function ownerSetNetworkID(uint256 _network) public onlyOwner {
         network = _network;
         delete sideContracts[network];
     }
 
-    function ownerSetSideContract(uint256 _network, address _addr) public onlyOwner{
-        require (network != _network, '!current contract');
+    function ownerSetSideContract(uint256 _network, address _addr)
+        public
+        onlyOwner
+    {
+        require(network != _network, "!current contract");
         sideContracts[_network] = _addr;
     }
 
-    function ownerSetMintable(uint256 _tokenId, bool _mintable) public onlyOwner{
-        require(tokens[_tokenId] != address(0), '!tokenId');
+    function ownerSetMintable(uint256 _tokenId, bool _mintable)
+        public
+        onlyOwner
+    {
+        require(tokens[_tokenId] != address(0), "!tokenId");
         mintable[_tokenId] = _mintable;
     }
 
-    function emergencyWithdrawETH(uint256 amount, address addr) public onlyOwner{
+    function emergencyWithdrawETH(uint256 amount, address addr)
+        public
+        onlyOwner
+    {
         require(addr != address(0));
         payable(addr).transfer(amount);
     }
 
-    function emergencyWithdrawERC20Tokens(address _tokenAddr, address _to, uint _amount) public onlyOwner {
+    function emergencyWithdrawERC20Tokens(
+        address _tokenAddr,
+        address _to,
+        uint256 _amount
+    ) public onlyOwner {
         StandardToken(_tokenAddr).transfer(_to, _amount);
+    }
+
+    function setMuonContract(address addr) public onlyRole(ADMIN_ROLE) {
+        muon = IMuonV02(addr);
     }
 }
