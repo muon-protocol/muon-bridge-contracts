@@ -242,7 +242,7 @@ contract MuonBridge is Ownable {
         require(tokens[_tokenId] == address(0), "already exist");
 
         bytes32 hash = keccak256(
-            abi.encodePacked(_tokenId, _name, _symbol, _decimals, APP_ID)
+            abi.encodePacked(APP_ID,_tokenId, _name, _symbol, _decimals)
         );
         require(muon.verify(_reqId, uint256(hash), _sigs), "!verified");
 
