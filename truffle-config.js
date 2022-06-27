@@ -6,7 +6,7 @@
  *
  * More information about configuration can be found at:
  *
- * truffleframework.com/docs/advanced/configuration
+ * trufflesuite.com/docs/advanced/configuration
  *
  * To deploy via Infura you'll need a wallet provider (like @truffle/hdwallet-provider)
  * to sign your transactions before they're sent to a remote public node. Infura accounts
@@ -17,18 +17,14 @@
  * phrase from a file you've .gitignored so it doesn't accidentally become public.
  *
  */
+require('dotenv').config()
 
-// const HDWalletProvider = require('@truffle/hdwallet-provider');
+const HDWalletProvider = require('@truffle/hdwallet-provider')
 // const infuraKey = "fj4jll3k.....";
 //
 // const fs = require('fs');
 // const mnemonic = fs.readFileSync(".secret").toString().trim();
 
-function missing_privateKey(){throw 'MNEMONIC/privateKey missing'}
-
-require('dotenv').config()
-const HDWalletProvider = require("@truffle/hdwallet-provider");
-console.log('https://ropsten.infura.io/v3/' + process.env.INFURA_KEY)
 module.exports = {
   /**
    * Networks define how you connect to your ethereum client and let you set the
@@ -52,7 +48,6 @@ module.exports = {
       port: 8545, // Standard Ethereum port (default: none)
       network_id: '*' // Any network (default: none)
     },
-
     // Another network with more advanced options...
     // advanced: {
     // port: 8777,             // Custom port
@@ -60,81 +55,130 @@ module.exports = {
     // gas: 8500000,           // Gas sent with each transaction (default: ~6700000)
     // gasPrice: 20000000000,  // 20 gwei (in wei) (default: 100 gwei)
     // from: <address>,        // Account to send txs from (default: accounts[0])
-    // websockets: true        // Enable EventEmitter interface for web3 (default: false)
+    // websocket: true        // Enable EventEmitter interface for web3 (default: false)
     // },
-
     // Useful for deploying to a public network.
     // NB: It's important to wrap the provider as a function.
     ropsten: {
       //provider: () => new HDWalletProvider(mnemonic, `https://ropsten.infura.io/v3/YOUR-PROJECT-ID`),
       provider: () =>
         new HDWalletProvider(
-          process.env.MNEMONIC || process.env.PK || missing_privateKey(),
+          process.env.PK,
           'https://ropsten.infura.io/v3/' + process.env.INFURA_KEY
         ),
       network_id: 3, // Ropsten's id
       gas: 5500000, // Ropsten has a lower block limit than mainnet
       confirmations: 2, // # of confs to wait between deployments. (default: 0)
       timeoutBlocks: 200, // # of blocks before a deployment times out  (minimum/default: 50)
-      skipDryRun: true // Skip dry run before migrations? (default: false for public nets )
+      skipDryRun: true, // Skip dry run before migrations? (default: false for public nets )
+      networkCheckTimeout: 999999
     },
 
     rinkeby: {
       provider: () =>
         new HDWalletProvider(
-          process.env.MNEMONIC || process.env.PK || missing_privateKey(),
+          process.env.PK,
           'https://rinkeby.infura.io/v3/' + process.env.INFURA_KEY
         ),
+      networkCheckTimeout: 10000,
       network_id: 4, // Ropsten's id
       gas: 5500000, // Ropsten has a lower block limit than mainnet
       confirmations: 2, // # of confs to wait between deployments. (default: 0)
       timeoutBlocks: 200, // # of blocks before a deployment times out  (minimum/default: 50)
-      skipDryRun: true // Skip dry run before migrations? (default: false for public nets )
+      skipDryRun: true, // Skip dry run before migrations? (default: false for public nets )
+      networkCheckTimeout: 999999
     },
 
     bsctest: {
       provider: () =>
         new HDWalletProvider(
-          process.env.MNEMONIC || process.env.PK || missing_privateKey(),
+          process.env.PK,
           `https://data-seed-prebsc-1-s2.binance.org:8545`
         ),
       network_id: 97,
       confirmations: 2,
       timeoutBlocks: 200,
-      skipDryRun: true
+      skipDryRun: true,
+      networkCheckTimeout: 999999
     },
 
     bsc: {
       provider: () =>
         new HDWalletProvider(
-          process.env.MNEMONIC || process.env.PK || missing_privateKey(),
+          process.env.PK,
           `https://bsc-dataseed1.binance.org`
         ),
       network_id: 56,
       confirmations: 2,
       timeoutBlocks: 200,
-      gas: 5500000,
+      //gas: 5500000,
+      gasPrice: 5000000000,
       skipDryRun: true
     },
 
     ftmtest: {
       provider: () =>
         new HDWalletProvider(
-          process.env.MNEMONIC || process.env.PK || missing_privateKey(),
+          process.env.PK,
           `https://rpc.testnet.fantom.network/`
         ),
       network_id: 4002,
       confirmations: 2,
       timeoutBlocks: 200,
       gas: 5500000,
+      skipDryRun: true,
+      networkCheckTimeout: 999999
+    },
+    xdai: {
+      provider: () =>
+        new HDWalletProvider(process.env.PK, `https://rpc.xdaichain.com/`),
+      network_id: 100,
+      confirmations: 2,
+      timeoutBlocks: 200,
+      gas: 5500000,
       skipDryRun: true
+    },
+    sokol: {
+      provider: () =>
+        new HDWalletProvider(process.env.PK, `https://sokol.poa.network`),
+      network_id: 77,
+      confirmations: 2,
+      timeoutBlocks: 200,
+      gas: 5500000,
+      skipDryRun: true
+    },
+    polygon: {
+      provider: () =>
+        new HDWalletProvider(
+          process.env.PK,
+          'https://rpc-mainnet.matic.network'
+        ),
+      network_id: 137,
+      confirmations: 2,
+      timeoutBlocks: 200,
+      gas: 5500000,
+      skipDryRun: true
+    },
+
+    mumbai: {
+      provider: () =>
+        new HDWalletProvider(
+          process.env.PK,
+          'https://matic-mumbai.chainstacklabs.com'
+        ),
+      network_id: 80001,
+      confirmations: 2,
+      timeoutBlocks: 200,
+      gas: 5500000,
+      skipDryRun: true,
+      networkCheckTimeout: 999999
     }
 
     // Useful for private networks
     // private: {
-    //   provider: () => new HDWalletProvider(mnemonic, `https://network.io`),
-    //   network_id: 2111,   // This network is yours, in the cloud.
-    //   production: true    // Treats this network as if it was a public net. (default: false)
+    // provider: () => new HDWalletProvider(mnemonic, `https://network.io`),
+    // network_id: 2111,   // This network is yours, in the cloud.
+    // production: true    // Treats this network as if it was a public net. (default: false)
     // }
   },
 
@@ -159,11 +203,21 @@ module.exports = {
     }
   },
 
+  // Truffle DB is currently disabled by default; to enable it, change enabled: false to enabled: true
+  //
+  // Note: if you migrated your contracts prior to enabling this field in your Truffle project and want
+  // those previously migrated contracts available in the .db directory, you will need to run the following:
+  // $ truffle migrate --reset --compile-all
   plugins: ['truffle-plugin-verify'],
+
+  db: {
+    enabled: false
+  },
 
   api_keys: {
     bscscan: process.env.BSCSCAN_KEY,
     etherscan: process.env.ETHERSCAN_KEY,
-    ftmscan: process.env.FTMSCAN_KEY
+    ftmscan: process.env.FTMSCAN_KEY,
+    polygonscan: process.env.POLYGON_KEY
   }
 }

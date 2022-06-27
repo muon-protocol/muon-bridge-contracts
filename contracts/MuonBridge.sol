@@ -319,7 +319,7 @@ contract MuonBridge is Ownable {
         StandardToken(_tokenAddr).transfer(_to, _amount);
     }
 
-    function setMuonContract(address addr) public onlyRole(ADMIN_ROLE) {
+    function setMuonContract(address addr) public onlyOwner {
         muon = IMuonV02(addr);
     }
 }
